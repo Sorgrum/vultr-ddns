@@ -1,0 +1,3 @@
+[submodule "vultr-ddns-agent"]
+	path = vultr-ddns-agent
+	url = https://github.com/andyjsmith/Vultr-Dynamic-DNS.git
