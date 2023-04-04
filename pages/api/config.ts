@@ -1,11 +1,11 @@
-import { vultrConfigSchema, VultrConfig } from "@/features/config/types";
-import type { NextApiRequest, NextApiResponse } from "next";
-import { readFile, readdir, readFileSync, writeFileSync } from "fs";
 import path from "path";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { LocalConfig, localConfigSchema } from "@/features/config/types";
 
 export type ConfigResponse = {
   error: string | null;
-  data: VultrConfig | null;
+  data: LocalConfig | null;
 };
 
 export const isConfigResponse = (msg: unknown): msg is ConfigResponse => {
@@ -16,7 +16,7 @@ export const isConfigResponse = (msg: unknown): msg is ConfigResponse => {
   return true;
 };
 
-const configPath = path.join("vultr-ddns-agent/config.json");
+const configPath = path.join("app-data/config.json");
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,22 +24,27 @@ export default async function handler(
 ) {
   if (req.method === "GET") {
     try {
-      const configJson = readFileSync(configPath, { encoding: "utf8" });
-      try {
-        const config = JSON.parse(configJson);
-
-        const parsedConfig = vultrConfigSchema.parse(config);
-
+      if (!existsSync(configPath))
         return res.status(200).json({
           error: null,
-          data: parsedConfig,
+          data: null,
         });
-      } catch (err) {
+      const configJson = readFileSync(configPath, { encoding: "utf8" });
+      const config = JSON.parse(configJson);
+
+      const parsedConfig = localConfigSchema.safeParse(config);
+
+      if (!parsedConfig.success) {
         return res.status(200).json({
-          error: "Invalid saved config",
+          error: "Saved config doesn't match schema",
           data: null,
         });
       }
+
+      return res.status(200).json({
+        error: null,
+        data: parsedConfig.data,
+      });
     } catch (err) {
       return res.status(200).json({
         error: "Unable to load config file",
@@ -49,16 +54,25 @@ export default async function handler(
   } else if (req.method === "POST") {
     const config = req.body.config;
     try {
-      const parsedConfig = vultrConfigSchema.parse(config);
-
-      writeFileSync(configPath, JSON.stringify(parsedConfig));
-      setTimeout(() => {
+      const parsedConfig = localConfigSchema.safeParse(config);
+      if (!parsedConfig.success) {
         return res.status(200).json({
-          error: null,
-          data: parsedConfig,
+          error: "Config doesn't match schema",
+          data: null,
         });
-      }, 2000);
+      }
+      writeFileSync(configPath, JSON.stringify(parsedConfig.data));
+
+      const timeout = (ms: number) => {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      };
+      await timeout(2000);
+      return res.status(200).json({
+        error: null,
+        data: parsedConfig.data,
+      });
     } catch (err) {
+      console.error(err);
       return res.status(200).json({
         error: "Invalid config",
         data: null,

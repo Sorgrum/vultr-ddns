@@ -42,16 +42,14 @@ export const getRecords = async (config: LocalConfig): Promise<Record[]> => {
   );
 
   const resJson = await res.json();
-
   if (isError(resJson)) {
+    if (resJson.error.includes("is not authorized")) {
+      throw new Error(
+        "You are not authorized to use the API. If using IPv6, or an IPv6 address is displayed below, you need to go to your account API settings and click Allow all IPv6."
+      );
+    }
     throw new Error(resJson.error);
   }
-
-  const resText = await res.text();
-  if (resText.includes("is not authorized"))
-    throw new Error(
-      "You are not authorized to use the API. If using IPv6, or an IPv6 address is displayed below, you need to go to your account API settings and click Allow all IPv6."
-    );
 
   const resParsed = recordsResponseSchema.safeParse(resJson);
   if (!resParsed.success) throw new Error("Invalid response from Vultr API");
@@ -65,10 +63,12 @@ export const getRecordsToChange = async (
   config: LocalConfig
 ): Promise<{ checked: Record[]; change: LocalRecord[] }> => {
   const records = await getRecords(config);
+  console.debug("all records:", records);
 
   const toCheck: Record[] = [];
 
   records.forEach((record) => {
+    console.log("record,", record, "dynamicRecords,", config.dynamicRecords);
     if (
       record.type === recordType &&
       config.dynamicRecords.some((dr) => dr.record === record.name)

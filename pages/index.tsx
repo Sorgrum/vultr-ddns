@@ -1,29 +1,8 @@
-import Head from "next/head";
-import { useFieldArray, useForm } from "react-hook-form";
-import styles from "@/styles/Home.module.css";
 import React from "react";
-import {
-  FormControl,
-  FormLabel,
-  Input,
-  FormErrorMessage,
-  Button,
-  Box,
-  IconButton,
-  Text,
-  Flex,
-} from "@chakra-ui/react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { DeleteIcon } from "@chakra-ui/icons";
-import {
-  LocalConfig,
-  localConfigSchema,
-  VultrConfig,
-} from "@/features/config/types";
-import { toast } from "react-toastify";
-import { isConfigResponse } from "./api/config";
+import Head from "next/head";
+import styles from "@/styles/Home.module.css";
 import { ConfigForm } from "@/features/config/ConfigForm";
-import { isError } from "@/types";
+import { Status } from "@/features/ddns/Status";
 
 export default function Home() {
   return (
@@ -37,6 +16,7 @@ export default function Home() {
       <main className={styles.main}>
         <div className={styles.grid}>
           <ConfigForm />
+          <Status />
         </div>
       </main>
     </>

@@ -1,17 +1,17 @@
-import { isConfigResponse } from "@/pages/api/config";
 import React from "react";
 import { toast } from "react-toastify";
-import { VultrConfig } from "./types";
+import { isConfigResponse } from "@/pages/api/config";
+import { LocalConfig } from "./types";
+import { isError } from "@/types";
 
 type Props = {
-  onConfigUpdate?: (config: VultrConfig) => void;
+  onConfigUpdate?: (config: LocalConfig) => void;
 };
 export const useSavedConfig = (props?: Props) => {
   const [loading, setLoading] = React.useState(true);
-  const [config, setConfig] = React.useState<VultrConfig | null>(null);
+  const [config, setConfig] = React.useState<LocalConfig | null>(null);
 
-  const refetch = async () => {
-    setLoading(true);
+  const fetchConfig = () =>
     fetch("/api/config")
       .then((res) => res.json())
       .then((res) => {
@@ -21,30 +21,40 @@ export const useSavedConfig = (props?: Props) => {
           if (res.data !== null) props?.onConfigUpdate?.(res.data);
         }
       })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Unable to connect to API");
-      })
       .finally(() => {
         setLoading(false);
       });
+
+  const refetch = async () => {
+    setLoading(true);
+    fetchConfig().catch((err) => {
+      console.error(err);
+      toast.error("Unable to connect to API");
+    });
   };
 
-  const save = async (config: VultrConfig) => {
+  const save = async (config: LocalConfig) => {
     return fetch("/api/config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ config }),
     })
+      .then((res) => res.json())
+      .then((res) => {
+        if (isError(res)) toast.error(res.error);
+      })
       .catch((err) => {
         console.error(err);
+        if (err instanceof Error) {
+          return toast.error(err.message);
+        }
         toast.error("Unable to save config");
       })
       .finally(refetch);
   };
 
   React.useEffect(() => {
-    refetch();
+    fetchConfig();
   }, []);
 
   return { config, loading, refetch, save };

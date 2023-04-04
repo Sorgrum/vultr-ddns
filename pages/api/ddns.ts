@@ -1,4 +1,4 @@
-import { LocalConfig, vultrConfigToLocalConfig } from "@/features/config/types";
+import { LocalConfig } from "@/features/config/types";
 import { getRecordsToChange, LocalRecord } from "@/features/ddns/records";
 import { NextApiRequest, NextApiResponse } from "next";
 import { isError } from "@/types";
@@ -72,7 +72,9 @@ export const synchronizeDDNS = async (
   console.debug("records, ipv4: ", ipv4Records, ", ipv6:", ipv6Records);
 
   if (ipv4Records.checked.length === 0 && ipv6Records.checked.length === 0)
-    throw new Error("Configuration error, no records to change.");
+    throw new Error(
+      "No matching records to synchronize found. Dynamic records must exist in Vultr DNS records."
+    );
 
   if (ipv4Records.change.length === 0 && ipv6Records.change.length === 0) {
     console.debug("no changed records");
@@ -92,19 +94,21 @@ const fetchConfig = async (): Promise<LocalConfig> => {
     throw new Error("Unable to retrieve configuration");
   if (resJson.data === null)
     throw new Error("Unable to retrieve configuration");
-  return vultrConfigToLocalConfig(resJson.data);
+  return resJson.data;
 };
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.debug("/api/ddns");
   try {
     const config = await fetchConfig();
     const result = await synchronizeDDNS(config);
     console.log("result", result);
     return res.status(200).json(result);
   } catch (err) {
+    console.error(err);
     if (err instanceof Error) {
       return res.status(200).json({ error: err.message });
     }
