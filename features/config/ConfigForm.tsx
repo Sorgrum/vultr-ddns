@@ -16,14 +16,15 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "react-toastify";
 import { isConfigResponse } from "@/pages/api/config";
 import {
-  VultrConfigSchema,
-  LocalConfigSchema,
+  VultrConfig,
+  LocalConfig,
   localConfigSchema,
   localConfigToVultrConfig,
   vultrConfigToLocalConfig,
 } from "./types";
 import styles from "./ConfigForm.module.css";
 import { useSavedConfig } from "./useSavedConfig";
+import { isError } from "@/types";
 
 export const ConfigForm = () => {
   const {
@@ -32,20 +33,35 @@ export const ConfigForm = () => {
     control,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<LocalConfigSchema>({
+  } = useForm<LocalConfig>({
     resolver: zodResolver(localConfigSchema),
   });
 
-  const { loading, save } = useSavedConfig({
+  const { loading, save, config } = useSavedConfig({
     onConfigUpdate: (config) => reset(vultrConfigToLocalConfig(config)),
   });
+
+  React.useEffect(() => {
+    console.log("config", config);
+    if (loading) return;
+    if (config === null) return;
+    fetch("/api/ddns")
+      .then((res) => res.json())
+      .then((res) => {
+        if (isError(res)) {
+          toast.error(res.error);
+        }
+        return res;
+      })
+      .then((res) => console.log(res));
+  }, [config, loading]);
 
   const { fields, append, remove } = useFieldArray({
     control, // control props comes from useForm (optional: if you are using FormContext)
     name: "dynamicRecords", // unique name for your Field Array
   });
 
-  const onSubmit = (config: LocalConfigSchema) => {
+  const onSubmit = (config: LocalConfig) => {
     return save(localConfigToVultrConfig(config));
   };
 

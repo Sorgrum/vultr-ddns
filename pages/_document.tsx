@@ -1,7 +1,6 @@
 import { theme } from "@/theme";
 import { ColorModeScript } from "@chakra-ui/react";
 import { Html, Head, Main, NextScript } from "next/document";
-import { ToastContainer } from "react-toastify";
 
 export default function Document() {
   return (
@@ -11,7 +10,6 @@ export default function Document() {
         <ColorModeScript initialColorMode={theme.config.initialColorMode} />
         <Main />
         <NextScript />
-        <ToastContainer />
       </body>
     </Html>
   );

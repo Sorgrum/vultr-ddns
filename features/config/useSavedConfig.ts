@@ -1,14 +1,14 @@
 import { isConfigResponse } from "@/pages/api/config";
 import React from "react";
 import { toast } from "react-toastify";
-import { VultrConfigSchema } from "./types";
+import { VultrConfig } from "./types";
 
 type Props = {
-  onConfigUpdate?: (config: VultrConfigSchema) => void;
+  onConfigUpdate?: (config: VultrConfig) => void;
 };
 export const useSavedConfig = (props?: Props) => {
   const [loading, setLoading] = React.useState(true);
-  const [config, setConfig] = React.useState<VultrConfigSchema | null>(null);
+  const [config, setConfig] = React.useState<VultrConfig | null>(null);
 
   const refetch = async () => {
     setLoading(true);
@@ -30,7 +30,7 @@ export const useSavedConfig = (props?: Props) => {
       });
   };
 
-  const save = async (config: VultrConfigSchema) => {
+  const save = async (config: VultrConfig) => {
     return fetch("/api/config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

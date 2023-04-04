@@ -1,11 +1,11 @@
-import { vultrConfigSchema, VultrConfigSchema } from "@/features/config/types";
+import { vultrConfigSchema, VultrConfig } from "@/features/config/types";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { readFile, readdir, readFileSync, writeFileSync } from "fs";
 import path from "path";
 
 export type ConfigResponse = {
   error: string | null;
-  data: VultrConfigSchema | null;
+  data: VultrConfig | null;
 };
 
 export const isConfigResponse = (msg: unknown): msg is ConfigResponse => {
@@ -16,12 +16,12 @@ export const isConfigResponse = (msg: unknown): msg is ConfigResponse => {
   return true;
 };
 
+const configPath = path.join("vultr-ddns-agent/config.json");
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ConfigResponse>
 ) {
-  const configPath = path.join("data/config.json");
-
   if (req.method === "GET") {
     try {
       const configJson = readFileSync(configPath, { encoding: "utf8" });

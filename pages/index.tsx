@@ -16,13 +16,14 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DeleteIcon } from "@chakra-ui/icons";
 import {
-  LocalConfigSchema,
+  LocalConfig,
   localConfigSchema,
-  VultrConfigSchema,
+  VultrConfig,
 } from "@/features/config/types";
 import { toast } from "react-toastify";
 import { isConfigResponse } from "./api/config";
 import { ConfigForm } from "@/features/config/ConfigForm";
+import { isError } from "@/types";
 
 export default function Home() {
   return (
