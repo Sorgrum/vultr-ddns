@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { LocalConfig, localConfigSchema } from "./types";
 import styles from "./ConfigForm.module.css";
-import { useSavedConfig } from "./useSavedConfig";
+import { useConfigAPI } from "./useConfigAPI";
 import { toast } from "react-toastify";
 
 export const ConfigForm = () => {
@@ -29,17 +29,22 @@ export const ConfigForm = () => {
     resolver: zodResolver(localConfigSchema),
   });
 
-  const { loading, save, config } = useSavedConfig({
+  const { loading, save, refetch } = useConfigAPI({
     onConfigUpdate: (config) => reset(config),
   });
+
+  React.useEffect(() => {
+    refetch();
+  }, []);
 
   const { fields, append, remove } = useFieldArray({
     control, // control props comes from useForm (optional: if you are using FormContext)
     name: "dynamicRecords", // unique name for your Field Array
   });
 
-  const onSubmit = (config: LocalConfig) => {
-    return save(config).then(() => toast.success("Config saved"));
+  const onSubmit = async (config: LocalConfig) => {
+    await save(config);
+    toast.success("Config saved");
   };
 
   const addDynamicRecord = () => {

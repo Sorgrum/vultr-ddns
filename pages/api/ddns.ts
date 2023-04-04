@@ -1,5 +1,9 @@
 import { LocalConfig } from "@/features/config/types";
-import { getRecordsToChange, LocalRecord } from "@/features/ddns/records";
+import {
+  ExtendedRecord,
+  getRecordsToChange,
+  LocalRecord,
+} from "@/features/ddns/records";
 import { NextApiRequest, NextApiResponse } from "next";
 import { isError } from "@/types";
 import { isConfigResponse } from "./config";
@@ -55,7 +59,7 @@ export const patchRecord = async (
 
 export const synchronizeDDNS = async (
   config: LocalConfig
-): Promise<PromiseSettledResult<LocalRecord>[]> => {
+): Promise<ExtendedRecord[]> => {
   const ipv4: string | null = await getPublicIPv4();
   const ipv6: string | null = await getPublicIPv6();
 
@@ -78,13 +82,63 @@ export const synchronizeDDNS = async (
 
   if (ipv4Records.change.length === 0 && ipv6Records.change.length === 0) {
     console.debug("no changed records");
-    return [];
   }
 
-  return await Promise.allSettled([
-    ...ipv4Records.change.map((record) => patchRecord(record, config)),
-    ...ipv6Records.change.map((record) => patchRecord(record, config)),
-  ]);
+  const settledIPv4 = await Promise.allSettled(
+    ipv4Records.change.map((record) => patchRecord(record, config))
+  );
+  const settledIPv6 = await Promise.allSettled(
+    ipv6Records.change.map((record) => patchRecord(record, config))
+  );
+
+  const fulfilledIPv4 = settledIPv4
+    .filter(
+      (res): res is PromiseFulfilledResult<LocalRecord> =>
+        res.status === "fulfilled"
+    )
+    .map((res) => res.value);
+
+  const fulfilledIPv6 = settledIPv6
+    .filter(
+      (res): res is PromiseFulfilledResult<LocalRecord> =>
+        res.status === "fulfilled"
+    )
+    .map((res) => res.value);
+
+  return [
+    ...ipv4Records.checked.map((record) => ({
+      ...record,
+      status: record.data === ipv4 ? ("synced" as const) : ("unknown" as const),
+      lastUpdated: Date.now(),
+    })),
+    ...ipv4Records.change.map((record) => {
+      const isFulfilled = fulfilledIPv4.some(
+        (fullfilled) => fullfilled.id === record.id
+      );
+      return {
+        ...record,
+        status: isFulfilled ? ("synced" as const) : ("unknown" as const),
+        data: isFulfilled ? record.newIp : record.data,
+        lastUpdated: Date.now(),
+      };
+    }),
+    ...ipv6Records.checked.map((record) => ({
+      ...record,
+      status: record.data === ipv6 ? ("synced" as const) : ("unknown" as const),
+      lastUpdated: Date.now(),
+    })),
+    ...ipv6Records.change.map((record) => {
+      const isFulfilled = fulfilledIPv6.some(
+        (fullfilled) => fullfilled.id === record.id
+      );
+      return {
+        ...record,
+        status: isFulfilled ? ("synced" as const) : ("unknown" as const),
+        data: isFulfilled ? record.newIp : record.data,
+        lastUpdated: Date.now(),
+      };
+    }),
+  ];
 };
 
 const fetchConfig = async (): Promise<LocalConfig> => {
@@ -97,21 +151,34 @@ const fetchConfig = async (): Promise<LocalConfig> => {
   return resJson.data;
 };
 
+export type DDNSResponse = {
+  error: string | null;
+  data: ExtendedRecord[] | null;
+};
+
+export const isDDNSResponse = (msg: unknown): msg is DDNSResponse => {
+  if (typeof msg !== "object") return false;
+  if (msg === null) return false;
+  if (!Object.hasOwn(msg, "error")) return false;
+  if (!Object.hasOwn(msg, "data")) return false;
+  return true;
+};
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<DDNSResponse>
 ) {
   console.debug("/api/ddns");
   try {
     const config = await fetchConfig();
-    const result = await synchronizeDDNS(config);
-    console.log("result", result);
-    return res.status(200).json(result);
+    const records: ExtendedRecord[] = await synchronizeDDNS(config);
+    console.log("result", records);
+    return res.status(200).json({ data: records, error: null });
   } catch (err) {
     console.error(err);
     if (err instanceof Error) {
-      return res.status(200).json({ error: err.message });
+      return res.status(200).json({ data: null, error: err.message });
     }
-    return res.status(200).json({ error: "Unknown error" });
+    return res.status(200).json({ data: null, error: "Unknown error" });
   }
 }

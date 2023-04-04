@@ -3,13 +3,14 @@ import { toast } from "react-toastify";
 import { isConfigResponse } from "@/pages/api/config";
 import { LocalConfig } from "./types";
 import { isError } from "@/types";
+import { useConfigActions } from "./useConfig";
 
 type Props = {
   onConfigUpdate?: (config: LocalConfig) => void;
 };
-export const useSavedConfig = (props?: Props) => {
-  const [loading, setLoading] = React.useState(true);
-  const [config, setConfig] = React.useState<LocalConfig | null>(null);
+export const useConfigAPI = (props?: Props) => {
+  const [loading, setLoading] = React.useState(false);
+  const { setConfig } = useConfigActions();
 
   const fetchConfig = () =>
     fetch("/api/config")
@@ -53,9 +54,5 @@ export const useSavedConfig = (props?: Props) => {
       .finally(refetch);
   };
 
-  React.useEffect(() => {
-    fetchConfig();
-  }, []);
-
-  return { config, loading, refetch, save };
+  return { loading, refetch, save };
 };
