@@ -29,7 +29,10 @@ export const RecordTableTimestamp = ({
   return (
     <>
       {typeof lastUpdated === "number"
-        ? `${formatDistanceToNow(lastUpdated)} ago`
+        ? `${formatDistanceToNow(lastUpdated, {
+            includeSeconds: true,
+            addSuffix: true,
+          })}`
         : null}
     </>
   );
@@ -55,6 +58,7 @@ export const RecordTableItem = ({ name }: { name: string }) => {
 export const RecordTable = () => {
   const config = useConfig();
   if (config === null) return null;
+
   return (
     <TableContainer>
       <Table variant="simple">

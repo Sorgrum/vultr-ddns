@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import { ExtendedRecord } from "./records";
+import { ExtendedRecord } from "./types";
 
 type RecordEntities = { [id: string]: ExtendedRecord };
 
@@ -10,29 +10,27 @@ interface RecordsState {
   setRecords: (records: ExtendedRecord[]) => void;
 }
 
-const useRecords = create<RecordsState>()(
+export const useRecords = create<RecordsState>()(
   devtools(
-    persist(
-      (set) => ({
-        records: {},
-        names: [],
-        setRecords: (records) => {
-          const entities: RecordEntities = {};
-          const names: string[] = [];
-          records.forEach((record) => {
-            names.push(record.name);
-            entities[record.name] = record;
-          });
-          set({
-            records: entities,
-            names,
-          });
-        },
-      }),
-      {
-        name: "records",
-      }
-    )
+    (set) => ({
+      records: {},
+      names: [],
+      setRecords: (records) => {
+        const entities: RecordEntities = {};
+        const names: string[] = [];
+        records.forEach((record) => {
+          names.push(record.name);
+          entities[record.name] = record;
+        });
+        set({
+          records: entities,
+          names,
+        });
+      },
+    }),
+    {
+      name: "records",
+    }
   )
 );
 

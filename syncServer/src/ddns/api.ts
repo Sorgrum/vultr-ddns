@@ -1,12 +1,9 @@
-import { LocalConfig } from "@/features/config/types";
-import {
-  ExtendedRecord,
-  getRecordsToChange,
-  LocalRecord,
-} from "@/features/ddns/records";
-import { NextApiRequest, NextApiResponse } from "next";
-import { isError } from "@/types";
-import { isConfigResponse } from "./config";
+import { DDNSResponse, ExtendedRecord, LocalRecord } from "features/ddns/types";
+import { isConfigResponse, LocalConfig } from "features/config/types";
+import { isError } from "types";
+import { Request, Response, Router } from "express";
+import { getRecordsToChange } from "./records";
+import { saveStatus } from "../status/api";
 
 const getPublicIPv4 = async (): Promise<string | null> => {
   try {
@@ -142,7 +139,7 @@ export const synchronizeDDNS = async (
 };
 
 const fetchConfig = async (): Promise<LocalConfig> => {
-  const res = await fetch("http://localhost:3000/api/config");
+  const res = await fetch("http://localhost:5000/config");
   const resJson = await res.json();
   if (!isConfigResponse(resJson))
     throw new Error("Unable to retrieve configuration");
@@ -151,27 +148,22 @@ const fetchConfig = async (): Promise<LocalConfig> => {
   return resJson.data;
 };
 
-export type DDNSResponse = {
-  error: string | null;
-  data: ExtendedRecord[] | null;
+const storeStatus = async (records: ExtendedRecord[]) => {
+  return fetch("http://localhost:5000/status", {
+    method: "POST",
+    body: JSON.stringify({ records }),
+  });
 };
 
-export const isDDNSResponse = (msg: unknown): msg is DDNSResponse => {
-  if (typeof msg !== "object") return false;
-  if (msg === null) return false;
-  if (!Object.hasOwn(msg, "error")) return false;
-  if (!Object.hasOwn(msg, "data")) return false;
-  return true;
-};
+const router = Router();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<DDNSResponse>
-) {
+router.post("/", async (req: Request, res: Response<DDNSResponse>) => {
   console.debug("/api/ddns");
   try {
     const config = await fetchConfig();
     const records: ExtendedRecord[] = await synchronizeDDNS(config);
+    console.log("prestore", records);
+    await saveStatus({ records });
     console.log("result", records);
     return res.status(200).json({ data: records, error: null });
   } catch (err) {
@@ -181,4 +173,6 @@ export default async function handler(
     }
     return res.status(200).json({ data: null, error: "Unknown error" });
   }
-}
+});
+
+export default router;

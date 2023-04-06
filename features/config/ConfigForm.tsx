@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
-import { LocalConfig, localConfigSchema } from "./types";
+import { LocalConfig, localConfigSchema, validateConfigSchema } from "./types";
 import styles from "./ConfigForm.module.css";
 import { useConfigAPI } from "./useConfigAPI";
 import { toast } from "react-toastify";
@@ -26,7 +26,7 @@ export const ConfigForm = () => {
     reset,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<LocalConfig>({
-    resolver: zodResolver(localConfigSchema),
+    resolver: zodResolver(validateConfigSchema),
   });
 
   const { loading, save, refetch } = useConfigAPI({
@@ -43,6 +43,13 @@ export const ConfigForm = () => {
   });
 
   const onSubmit = async (config: LocalConfig) => {
+    const valid = validateConfigSchema.safeParse(config);
+    console.log(
+      "valid",
+      valid.success,
+      valid.success ? valid.data : valid.error
+    );
+
     await save(config);
     toast.success("Config saved");
   };
@@ -85,7 +92,19 @@ export const ConfigForm = () => {
           </FormErrorMessage>
         </FormControl>
 
-        <FormControl isDisabled={disabled}>
+        <FormControl
+          isInvalid={!!errors["interval"]}
+          mb={4}
+          isDisabled={disabled}
+        >
+          <FormLabel htmlFor="interval">Sync Interval (minutes)</FormLabel>
+          <Input id="interval" {...register("interval")} autoComplete="off" />
+          <FormErrorMessage>
+            <>{errors.domain?.message}</>
+          </FormErrorMessage>
+        </FormControl>
+
+        <FormControl isDisabled={disabled} mt={4}>
           <FormLabel
             htmlFor="dynamicRecords"
             style={{ display: "flex", alignItems: "center" }}
