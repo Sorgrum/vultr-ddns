@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import { ExtendedRecord } from "./types";
+import { RecordStatus } from "./types";
 
-type RecordEntities = { [id: string]: ExtendedRecord };
+type RecordEntities = { [id: string]: RecordStatus };
 
 interface RecordsState {
   records: RecordEntities;
   names: string[];
-  setRecords: (records: ExtendedRecord[]) => void;
+  setRecords: (records: RecordStatus[]) => void;
 }
 
 export const useRecords = create<RecordsState>()(
@@ -41,5 +41,5 @@ export const useRecordsActions = () =>
 
 export const useRecordNames = () => useRecords((state) => state.names);
 
-export const useRecord = (name: string): ExtendedRecord | undefined =>
+export const useRecord = (name: string): RecordStatus | undefined =>
   useRecords((state) => state.records[name]);

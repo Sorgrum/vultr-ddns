@@ -5,14 +5,14 @@ import { toast } from "react-toastify";
 import { Button, Grid, Skeleton, Text } from "@chakra-ui/react";
 import { isError } from "@/types";
 import { useRecords, useRecordsActions } from "./useRecords";
-import { ExtendedRecord, isDDNSResponse } from "./types";
+import { RecordStatus, isDDNSResponse } from "./types";
 
 const DynamicRecordTable = dynamic(() => import("./RecordTable"), {
   ssr: false,
 });
 
 type Status = {
-  records: ExtendedRecord[];
+  records: RecordStatus[];
 };
 
 const isStatus = (arg: unknown): arg is Status => {

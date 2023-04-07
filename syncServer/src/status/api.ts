@@ -1,20 +1,10 @@
 import storage from "node-persist";
 import { Request, Response } from "express";
 import { Router } from "express";
+import { RecordStatus } from "features/ddns/types";
 
-type ExtendedRecord = {
-  id: string;
-  type: string;
-  name: string;
-  data: string;
-  priority: number;
-  ttl: number;
-  status: string;
-  lastUpdated: number;
-};
-
-export type Status = {
-  records: ExtendedRecord[];
+export type StatusSnapshot = {
+  records: RecordStatus[];
 };
 
 const router = Router();
@@ -24,7 +14,7 @@ router.get("/", async (req: Request, res: Response) => {
   return res.send(status);
 });
 
-export const saveStatus = (status: Status) => {
+export const saveStatus = (status: StatusSnapshot) => {
   return storage.setItem("status", status);
 };
 

@@ -6,6 +6,7 @@ import {
 } from "features/ddns/types";
 
 import { LocalConfig } from "../../../features/config/types";
+import { CreateRecord } from "./api";
 
 export const getRecords = async (config: LocalConfig): Promise<Record[]> => {
   const res = await fetch(
@@ -37,14 +38,17 @@ export const getRecordsToChange = async (
   recordType: "A" | "AAAA",
   ip: string,
   config: LocalConfig
-): Promise<{ checked: Record[]; change: LocalRecord[] }> => {
+): Promise<{
+  checked: Record[];
+  change: LocalRecord[];
+  create: CreateRecord[];
+}> => {
   const records = await getRecords(config);
   console.debug("all records:", records);
 
   const toCheck: Record[] = [];
 
   records.forEach((record) => {
-    console.log("record,", record, "dynamicRecords,", config.dynamicRecords);
     if (
       record.type === recordType &&
       config.dynamicRecords.some((dr) => dr.record === record.name)
@@ -60,5 +64,18 @@ export const getRecordsToChange = async (
       newIp: ip,
     }));
 
-  return { checked: toCheck, change: toChange };
+  const recordNames = records.map((r) => r.name);
+
+  const toCreate: CreateRecord[] = [];
+  config.dynamicRecords.forEach(({ record: recordName }) => {
+    if (!recordNames.includes(recordName)) {
+      toCreate.push({
+        name: recordName,
+        data: ip,
+        type: recordType,
+      });
+    }
+  });
+
+  return { checked: toCheck, change: toChange, create: toCreate };
 };

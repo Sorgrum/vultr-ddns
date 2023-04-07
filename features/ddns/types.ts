@@ -28,10 +28,13 @@ export const localRecordSchema = recordSchema.extend({
 export type LocalRecord = z.infer<typeof localRecordSchema>;
 
 export const extendedRecordSchema = recordSchema.extend({
+  id: z.string().optional(),
+  priority: z.number().optional(),
+  ttl: z.number().optional(),
   status: z.union([z.literal("synced"), z.literal("unknown")]),
   lastUpdated: z.number(),
 });
-export type ExtendedRecord = z.infer<typeof extendedRecordSchema>;
+export type RecordStatus = z.infer<typeof extendedRecordSchema>;
 
 export const recordsResponseSchema = z.object({
   records: z.array(recordSchema),
@@ -47,7 +50,7 @@ export type RecordsResponse = z.infer<typeof recordsResponseSchema>;
 
 export type DDNSResponse = {
   error: string | null;
-  data: ExtendedRecord[] | null;
+  data: RecordStatus[] | null;
 };
 
 export const isDDNSResponse = (msg: unknown): msg is DDNSResponse => {

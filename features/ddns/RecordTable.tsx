@@ -11,7 +11,7 @@ import {
 import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
 import { useConfig } from "../config/useConfig";
 import { useRecord } from "./useRecords";
-import { ExtendedRecord } from "./types";
+import { RecordStatus } from "./types";
 
 export const RecordTableTimestamp = ({
   lastUpdated,
@@ -87,7 +87,7 @@ export default RecordTable;
 const StatusIndicator = ({
   status,
 }: {
-  status: ExtendedRecord["status"] | undefined;
+  status: RecordStatus["status"] | undefined;
 }) => {
   const getColor = () => {
     if (status === "synced") return "var(--chakra-colors-green-400)";
