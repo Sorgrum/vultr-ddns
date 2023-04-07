@@ -31,7 +31,7 @@ export const Status = () => {
     try {
       const res = await fetch("http://localhost:5000/status");
       const resJson = await res.json();
-      console.log("fetchStatus", resJson, isStatus(resJson));
+
       if (isStatus(resJson)) {
         setRecords(resJson.records);
       }
