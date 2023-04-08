@@ -8,7 +8,7 @@ import {
 import { LocalConfig } from "../../../features/config/types";
 import { CreateRecord } from "./api";
 
-export const getRecords = async (config: LocalConfig): Promise<Record[]> => {
+export const fetchRecords = async (config: LocalConfig): Promise<Record[]> => {
   const res = await fetch(
     `https://api.vultr.com/v2/domains/${config.domain}/records?per_page=500`,
     {
@@ -36,14 +36,18 @@ export const getRecords = async (config: LocalConfig): Promise<Record[]> => {
 
 export const getRecordsToChange = async (
   recordType: "A" | "AAAA",
-  ip: string,
+  ip: string | null,
   config: LocalConfig
 ): Promise<{
   checked: Record[];
   change: LocalRecord[];
   create: CreateRecord[];
+  unchanged: Record[];
 }> => {
-  const records = await getRecords(config);
+  if (ip === null)
+    return { checked: [], change: [], create: [], unchanged: [] };
+
+  const records = await fetchRecords(config);
   console.debug("all records:", records);
 
   const toCheck: Record[] = [];
@@ -56,6 +60,8 @@ export const getRecordsToChange = async (
       toCheck.push(record);
     }
   });
+
+  const unchanged: Record[] = toCheck.filter((record) => record.data === ip);
 
   const toChange: LocalRecord[] = toCheck
     .filter((record) => record.data !== ip)
@@ -77,5 +83,5 @@ export const getRecordsToChange = async (
     }
   });
 
-  return { checked: toCheck, change: toChange, create: toCreate };
+  return { checked: toCheck, change: toChange, create: toCreate, unchanged };
 };

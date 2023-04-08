@@ -7,16 +7,19 @@ import {
   Thead,
   Th,
   Tbody,
+  TableCaption,
+  Skeleton,
 } from "@chakra-ui/react";
-import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import { useConfig } from "../config/useConfig";
-import { useRecord } from "./useRecords";
-import { RecordStatus } from "./types";
+import { useStatus, useStatusLastUpdated } from "./useStatus";
 
-export const RecordTableTimestamp = ({
-  lastUpdated,
+export const LastUpdated = ({
+  timestamp,
+  prefix,
 }: {
-  lastUpdated?: number;
+  timestamp: number | null | undefined;
+  prefix?: boolean;
 }) => {
   const [_, setTime] = React.useState(Date.now());
 
@@ -28,10 +31,16 @@ export const RecordTableTimestamp = ({
     };
   }, []);
 
+  const getPrefix = () => {
+    if (prefix) return "Last updated ";
+    return "";
+  };
+
   return (
     <>
-      {typeof lastUpdated === "number"
-        ? `${formatDistanceToNowStrict(lastUpdated, {
+      {getPrefix()}
+      {typeof timestamp === "number"
+        ? `${formatDistanceToNowStrict(timestamp, {
             addSuffix: true,
           })}`
         : null}
@@ -39,37 +48,69 @@ export const RecordTableTimestamp = ({
   );
 };
 
+export const StatusSkeleton = ({ children }: React.PropsWithChildren) => {
+  const lastUpdated = useStatusLastUpdated();
+  if (lastUpdated === null)
+    return (
+      <Skeleton
+        height="20px"
+        speed={1.4}
+        startColor="gray.200"
+        endColor="gray.500"
+      />
+    );
+  return <>{children}</>;
+};
+
 export const RecordTableItem = ({ name }: { name: string }) => {
-  const record = useRecord(name);
+  const lastUpdated = useStatusLastUpdated();
+
+  const record = useStatus(name);
+  console.log("name", name, record);
   return (
     <Tr>
       <Td>
-        <StatusIndicator status={record?.status} />
+        <StatusIndicator
+          active={lastUpdated === null ? undefined : record !== undefined}
+        />
       </Td>
-      <Td>{name}</Td>
-      <Td>{record?.data}</Td>
-      <Td>{record?.type}</Td>
       <Td>
-        <RecordTableTimestamp lastUpdated={record?.lastUpdated} />
+        <StatusSkeleton>{name}</StatusSkeleton>
+      </Td>
+      <Td>
+        <StatusSkeleton>{record?.data}</StatusSkeleton>
+      </Td>
+      <Td>
+        <StatusSkeleton>{record?.type}</StatusSkeleton>
+      </Td>
+      <Td>
+        <StatusSkeleton>
+          <LastUpdated timestamp={record?.lastUpdated} />
+        </StatusSkeleton>
       </Td>
     </Tr>
   );
 };
 
 export const RecordTable = () => {
+  const lastUpdated = useStatusLastUpdated();
+
   const config = useConfig();
   if (config === null) return null;
 
   return (
     <TableContainer>
       <Table variant="simple">
+        <TableCaption>
+          <LastUpdated timestamp={lastUpdated} prefix />
+        </TableCaption>
         <Thead>
           <Tr>
             <Th></Th>
             <Th>Name</Th>
             <Th>Data</Th>
             <Th>Type</Th>
-            <Th>Updated</Th>
+            <Th>Last Updated</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -84,15 +125,11 @@ export const RecordTable = () => {
 
 export default RecordTable;
 
-const StatusIndicator = ({
-  status,
-}: {
-  status: RecordStatus["status"] | undefined;
-}) => {
+const StatusIndicator = ({ active }: { active: boolean | undefined }) => {
   const getColor = () => {
-    if (status === "synced") return "var(--chakra-colors-green-400)";
-    if (status === "unknown") return "var(--chakra-colors-red-500)";
-    return "var(--chakra-colors-whiteAlpha-400)";
+    if (active === undefined) return "var(--chakra-colors-whiteAlpha-400";
+    if (active) return "var(--chakra-colors-green-400)";
+    return "var(--chakra-colors-red-500)";
   };
   return (
     <div

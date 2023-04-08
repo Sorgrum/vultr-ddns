@@ -27,14 +27,23 @@ export const localRecordSchema = recordSchema.extend({
 });
 export type LocalRecord = z.infer<typeof localRecordSchema>;
 
-export const extendedRecordSchema = recordSchema.extend({
+export const recordStatusSchema = recordSchema.extend({
   id: z.string().optional(),
   priority: z.number().optional(),
   ttl: z.number().optional(),
-  status: z.union([z.literal("synced"), z.literal("unknown")]),
-  lastUpdated: z.number(),
+  lastUpdated: z.number().optional(),
 });
-export type RecordStatus = z.infer<typeof extendedRecordSchema>;
+export type RecordStatus = z.infer<typeof recordStatusSchema>;
+
+export const statusSnapshotSchema = z.object({
+  records: recordStatusSchema.array(),
+  lastUpdated: z.number().nullable(),
+});
+export type StatusSnapshot = z.infer<typeof statusSnapshotSchema>;
+
+export const isStatusSnapshot = (arg: unknown): arg is StatusSnapshot => {
+  return statusSnapshotSchema.safeParse(arg).success;
+};
 
 export const recordsResponseSchema = z.object({
   records: z.array(recordSchema),
@@ -48,15 +57,12 @@ export const recordsResponseSchema = z.object({
 });
 export type RecordsResponse = z.infer<typeof recordsResponseSchema>;
 
-export type DDNSResponse = {
-  error: string | null;
-  data: RecordStatus[] | null;
-};
+export const ddnsResponseSchema = z.object({
+  error: z.string().nullable(),
+  data: statusSnapshotSchema.nullable(),
+});
+export type DDNSResponse = z.infer<typeof ddnsResponseSchema>;
 
 export const isDDNSResponse = (msg: unknown): msg is DDNSResponse => {
-  if (typeof msg !== "object") return false;
-  if (msg === null) return false;
-  if (!Object.prototype.hasOwnProperty.call(msg, "error")) return false;
-  if (!Object.prototype.hasOwnProperty.call(msg, "data")) return false;
-  return true;
+  return ddnsResponseSchema.safeParse(msg).success;
 };

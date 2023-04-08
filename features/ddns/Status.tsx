@@ -2,10 +2,10 @@ import React from "react";
 import dynamic from "next/dynamic";
 import useInterval from "react-useinterval";
 import { toast } from "react-toastify";
-import { Button, Grid, Skeleton, Text } from "@chakra-ui/react";
+import { Button, Grid, Text } from "@chakra-ui/react";
 import { isError } from "@/types";
-import { useRecords, useRecordsActions } from "./useRecords";
-import { RecordStatus, isDDNSResponse } from "./types";
+import { useRecordsActions } from "./useStatus";
+import { RecordStatus, isDDNSResponse, isStatusSnapshot } from "./types";
 
 const DynamicRecordTable = dynamic(() => import("./RecordTable"), {
   ssr: false,
@@ -15,30 +15,21 @@ type Status = {
   records: RecordStatus[];
 };
 
-const isStatus = (arg: unknown): arg is Status => {
-  if (arg === null) return false;
-  if (typeof arg !== "object") return false;
-  if (!Object.hasOwn(arg, "records")) return false;
-  return true;
-};
-
 export const Status = () => {
-  const [loading, setLoading] = React.useState(false);
   const [syncing, setSyncing] = React.useState(false);
-  const { setRecords } = useRecordsActions();
+  const { saveStatusSnapshot } = useRecordsActions();
 
   const fetchStatus = async () => {
     try {
       const res = await fetch("http://localhost:5000/status");
       const resJson = await res.json();
 
-      if (isStatus(resJson)) {
-        setRecords(resJson.records);
+      if (isStatusSnapshot(resJson)) {
+        saveStatusSnapshot(resJson);
       }
     } catch (err) {
       console.error("Unable to fetch ddns status", err);
     }
-    setLoading(false);
   };
 
   // Refetch status every minute
@@ -59,7 +50,7 @@ export const Status = () => {
         }
 
         if (isDDNSResponse(res)) {
-          if (res.data !== null) setRecords(res.data);
+          if (res.data !== null) saveStatusSnapshot(res.data);
         }
         return toast.success("DDNS synchronized");
       })
@@ -73,9 +64,7 @@ export const Status = () => {
           Sync
         </Button>
       </Grid>
-      <Skeleton isLoaded={!loading} speed={1.2}>
-        <DynamicRecordTable />
-      </Skeleton>
+      <DynamicRecordTable />
     </>
   );
 };

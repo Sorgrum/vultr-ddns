@@ -4,14 +4,16 @@ import {
   LocalRecord,
   Record,
   recordSchema,
+  StatusSnapshot,
 } from "features/ddns/types";
 import { isConfigResponse, LocalConfig } from "features/config/types";
 import { isError } from "types";
 import { Request, Response, Router } from "express";
 import { getRecordsToChange } from "./records";
-import { saveStatus } from "../status/api";
-import { record, z } from "zod";
+import { getStatusSnapshot, saveStatusSnapshot } from "../status/status";
+import { z } from "zod";
 import type { SetRequired } from "type-fest";
+import storage from "node-persist";
 
 const getPublicIPv4 = async (): Promise<string | null> => {
   try {
@@ -82,7 +84,7 @@ export const patchRecord = async (
   config: LocalConfig
 ): Promise<LocalRecord> => {
   try {
-    const res = await fetch(
+    await fetch(
       `https://api.vultr.com/v2/domains/${config.domain}/records/${record.id}`,
       {
         method: "PATCH",
@@ -92,9 +94,6 @@ export const patchRecord = async (
         body: JSON.stringify({ data: record.newIp }),
       }
     );
-
-    const resJson = await res.json();
-    if (isError(resJson)) throw new Error(resJson.error);
     return record;
   } catch (err) {
     if (err instanceof Error) throw new Error(err.message);
@@ -115,117 +114,58 @@ export const synchronizeDDNS = async (
   if (ipv4 === null) throw new Error("Unable to retrieve IPv4 address");
 
   const ipv4Records = await getRecordsToChange("A", ipv4, config);
-  const ipv6Records: Awaited<ReturnType<typeof getRecordsToChange>> =
-    ipv6 === null
-      ? { checked: [], change: [], create: [] }
-      : await getRecordsToChange("AAAA", ipv6, config);
+  const ipv6Records = await getRecordsToChange("AAAA", ipv6, config);
 
   console.debug("records, ipv4: ", ipv4Records, ", ipv6:", ipv6Records);
-
-  if (ipv4Records.checked.length === 0 && ipv6Records.checked.length === 0)
-    throw new Error(
-      "No matching records to synchronize found. Dynamic records must exist in Vultr DNS records."
-    );
 
   if (ipv4Records.change.length === 0 && ipv6Records.change.length === 0) {
     console.debug("no changed records");
   }
 
-  const settledIPv4Changes = await Promise.allSettled(
-    ipv4Records.change.map((record) => patchRecord(record, config))
-  );
-  const settledIPv6Changes = await Promise.allSettled(
-    ipv6Records.change.map((record) => patchRecord(record, config))
-  );
-  const settledIPv4Creates = await Promise.allSettled(
-    ipv4Records.create.map((record) => createRecord(record, config))
-  );
-  const settledIPv6Creates = await Promise.allSettled(
-    ipv6Records.create.map((record) => createRecord(record, config))
-  );
+  const onlyFulfilled = <T>(
+    res: PromiseRejectedResult | PromiseFulfilledResult<T>
+  ): res is PromiseFulfilledResult<T> => res.status === "fulfilled";
 
-  const fulfilledIPv4Changes = settledIPv4Changes
-    .filter(
-      (res): res is PromiseFulfilledResult<LocalRecord> =>
-        res.status === "fulfilled"
-    )
-    .map((res) => res.value);
+  const unwrap = <T>(res: PromiseFulfilledResult<T>): T => res.value;
 
-  const fulfilledIPv6Changes = settledIPv6Changes
-    .filter(
-      (res): res is PromiseFulfilledResult<LocalRecord> =>
-        res.status === "fulfilled"
-    )
-    .map((res) => res.value);
+  const setLastUpdated = (rec: RecordStatus): RecordStatus => ({
+    ...rec,
+    lastUpdated: Date.now(),
+  });
 
-  const fulfilledIPv4Creates = settledIPv4Creates
-    .filter(
-      (res): res is PromiseFulfilledResult<Record> => res.status === "fulfilled"
-    )
-    .map((res) => res.value);
-
-  const fulfilledIPv6Creates = settledIPv6Creates
-    .filter(
-      (res): res is PromiseFulfilledResult<Record> => res.status === "fulfilled"
-    )
-    .map((res) => res.value);
-
-  return [
-    ...ipv4Records.checked.map((record) => ({
-      ...record,
-      status: record.data === ipv4 ? ("synced" as const) : ("unknown" as const),
-      lastUpdated: Date.now(),
-    })),
-    ...ipv6Records.checked.map((record) => ({
-      ...record,
-      status: record.data === ipv6 ? ("synced" as const) : ("unknown" as const),
-      lastUpdated: Date.now(),
-    })),
-    ...ipv4Records.change.map((record) => {
-      const isFulfilled = fulfilledIPv4Changes.some(
-        (fullfilled) => fullfilled.id === record.id
-      );
-      return {
-        ...record,
-        status: isFulfilled ? ("synced" as const) : ("unknown" as const),
-        data: isFulfilled ? record.newIp : record.data,
-        lastUpdated: Date.now(),
-      };
-    }),
-    ...ipv6Records.change.map((record) => {
-      const isFulfilled = fulfilledIPv6Changes.some(
-        (fullfilled) => fullfilled.id === record.id
-      );
-      return {
-        ...record,
-        status: isFulfilled ? ("synced" as const) : ("unknown" as const),
-        data: isFulfilled ? record.newIp : record.data,
-        lastUpdated: Date.now(),
-      };
-    }),
-    ...ipv4Records.create.map((record) => {
-      const fullfilled = fulfilledIPv4Creates.find(
-        (fullfilled) => fullfilled.id === record.id
-      );
-      const isFulfilled = fullfilled !== undefined;
-      return {
-        ...record,
-        status: isFulfilled ? ("synced" as const) : ("unknown" as const),
-        lastUpdated: Date.now(),
-      };
-    }),
-    ...ipv4Records.create.map((record) => {
-      const fullfilled = fulfilledIPv6Creates.find(
-        (fullfilled) => fullfilled.id === record.id
-      );
-      const isFulfilled = fullfilled !== undefined;
-      return {
-        ...record,
-        status: isFulfilled ? ("synced" as const) : ("unknown" as const),
-        lastUpdated: Date.now(),
-      };
-    }),
+  const settled = [
+    ...(await Promise.allSettled(
+      ipv4Records.change.map((record) => patchRecord(record, config))
+    )),
+    ...(await Promise.allSettled(
+      ipv6Records.change.map((record) => patchRecord(record, config))
+    )),
+    ...(await Promise.allSettled(
+      ipv4Records.create.map((record) => createRecord(record, config))
+    )),
+    ...(await Promise.allSettled(
+      ipv6Records.create.map((record) => createRecord(record, config))
+    )),
   ];
+
+  const modifiedRecordsStatuses: RecordStatus[] = settled
+    .filter(onlyFulfilled)
+    .map(unwrap)
+    .map(setLastUpdated);
+
+  const statusSnapshot = await getStatusSnapshot();
+
+  const allRecords: RecordStatus[] = [];
+  config.dynamicRecords.forEach(({ record }) => {
+    const modified = modifiedRecordsStatuses.find((r) => r.name === record);
+    if (modified !== undefined) return allRecords.push(modified);
+    const saved = statusSnapshot.records.find((r) => r.name === record);
+    if (saved !== undefined) return allRecords.push(saved);
+  });
+
+  console.log("unchanged", ipv4Records.unchanged);
+
+  return allRecords;
 };
 
 const fetchConfig = async (): Promise<LocalConfig> => {
@@ -238,13 +178,6 @@ const fetchConfig = async (): Promise<LocalConfig> => {
   return resJson.data;
 };
 
-const storeStatus = async (records: RecordStatus[]) => {
-  return fetch("http://localhost:5000/status", {
-    method: "POST",
-    body: JSON.stringify({ records }),
-  });
-};
-
 const router = Router();
 
 router.post("/", async (req: Request, res: Response<DDNSResponse>) => {
@@ -252,8 +185,10 @@ router.post("/", async (req: Request, res: Response<DDNSResponse>) => {
   try {
     const config = await fetchConfig();
     const records: RecordStatus[] = await synchronizeDDNS(config);
-    await saveStatus({ records });
-    return res.status(200).json({ data: records, error: null });
+    console.debug("records", records);
+    const snapshot: StatusSnapshot = { records, lastUpdated: Date.now() };
+    await saveStatusSnapshot(snapshot);
+    return res.status(200).json({ data: snapshot, error: null });
   } catch (err) {
     console.error(err);
     if (err instanceof Error) {
