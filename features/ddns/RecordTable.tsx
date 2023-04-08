@@ -66,7 +66,7 @@ export const RecordTableItem = ({ name }: { name: string }) => {
   const lastUpdated = useStatusLastUpdated();
 
   const record = useStatus(name);
-  console.log("name", name, record);
+
   return (
     <Tr>
       <Td>
@@ -110,7 +110,7 @@ export const RecordTable = () => {
             <Th>Name</Th>
             <Th>Data</Th>
             <Th>Type</Th>
-            <Th>Last Updated</Th>
+            <Th>Last IP Update</Th>
           </Tr>
         </Thead>
         <Tbody>

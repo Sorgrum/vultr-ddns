@@ -20,7 +20,6 @@ export const useStatusState = create<StatusState>()(
       saveStatusSnapshot: (snapshot) => {
         const entities: StatusEntities = {};
         const names: string[] = [];
-        console.log("saveStatusSnapshot", snapshot);
         snapshot.records.forEach((record) => {
           names.push(record.name);
           entities[record.name] = record;

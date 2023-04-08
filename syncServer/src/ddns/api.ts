@@ -69,7 +69,6 @@ export const createRecord = async (
     );
 
     const resJson = await res.json();
-    console.log("create res", resJson, isCreateRecordResponse(resJson));
     if (isError(resJson)) throw new Error(resJson.error);
     if (isCreateRecordResponse(resJson)) return resJson.record;
     throw new Error(`Unable to create record. Name: ${record.name}`);
@@ -118,10 +117,6 @@ export const synchronizeDDNS = async (
 
   console.debug("records, ipv4: ", ipv4Records, ", ipv6:", ipv6Records);
 
-  if (ipv4Records.change.length === 0 && ipv6Records.change.length === 0) {
-    console.debug("no changed records");
-  }
-
   const onlyFulfilled = <T>(
     res: PromiseRejectedResult | PromiseFulfilledResult<T>
   ): res is PromiseFulfilledResult<T> => res.status === "fulfilled";
@@ -163,8 +158,6 @@ export const synchronizeDDNS = async (
     if (saved !== undefined) return allRecords.push(saved);
   });
 
-  console.log("unchanged", ipv4Records.unchanged);
-
   return allRecords;
 };
 
@@ -185,7 +178,6 @@ router.post("/", async (req: Request, res: Response<DDNSResponse>) => {
   try {
     const config = await fetchConfig();
     const records: RecordStatus[] = await synchronizeDDNS(config);
-    console.debug("records", records);
     const snapshot: StatusSnapshot = { records, lastUpdated: Date.now() };
     await saveStatusSnapshot(snapshot);
     return res.status(200).json({ data: snapshot, error: null });

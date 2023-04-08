@@ -43,13 +43,6 @@ export const ConfigForm = () => {
   });
 
   const onSubmit = async (config: LocalConfig) => {
-    const valid = validateConfigSchema.safeParse(config);
-    console.log(
-      "valid",
-      valid.success,
-      valid.success ? valid.data : valid.error
-    );
-
     await save(config);
     toast.success("Config saved");
   };

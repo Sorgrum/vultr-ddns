@@ -21,10 +21,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const initiateSync = () => {
-  console.log("initiating sync");
   fetch("http://localhost:5000/ddns", { method: "POST" })
     .then((res) => res.json())
-    .then(console.log)
     .catch((err) => console.error("Error syncing ddns", err));
 };
 
@@ -41,19 +39,18 @@ const defaultConfig: LocalConfig = {
   await storage.init(/* options ... */);
   const config: unknown = await storage.getItem("config");
   if (isLocalConfig(config)) {
-    console.log(
+    console.debug(
       "Setting up initial task on saved interval",
       `*/${config.interval} * * * *`
     );
     task = cron.schedule(`*/${config.interval} * * * *`, initiateSync);
   } else {
-    console.log(
+    console.debug(
       "Setting up initial task using default interval",
       `*/5 * * * *`
     );
     task = cron.schedule(`*/5 * * * *`, initiateSync);
     const res = await storage.setItem("config", defaultConfig);
-    console.debug("startup", res, isLocalConfig(defaultConfig), defaultConfig);
   }
 })();
 

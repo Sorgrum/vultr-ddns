@@ -3,13 +3,27 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 6rem;
+  padding: 1rem;
   min-height: 100vh;
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
+  .main {
+    padding: 2rem;
+  }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  .main {
+    padding: 6rem;
+  }
 }
 
 .grid {
   display: grid;
   gap: 2rem;
-  width: var(--max-width);
-  max-width: 100%;
+  width: 100%;
+  max-width: 768px;
 }
