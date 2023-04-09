@@ -4,8 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "prebuild:ui": "npx rimraf .next",
+    "build:ui": "next build",
+    "prebuild:server": "npx rimraf syncServer/dist",
+    "build:server": "npm run --prefix syncServer build",
+    "build": "concurrently -c \"black.bgBlue,green.bgBlack\" \"npm:build:ui\" \"npm:build:server\"",
+    "start:ui": "next start",
+    "start:server": "npm run --prefix syncServer start",
+    "start": "concurrently -c \"black.bgBlue,green.bgBlack\" \"npm:start:ui\" \"npm:start:server\"",
     "lint": "next lint"
   },
   "dependencies": {
@@ -17,6 +23,7 @@
     "@types/react": "18.0.32",
     "@types/react-dom": "18.0.11",
     "await-to-js": "^3.0.0",
+    "concurrently": "^8.0.1",
     "date-fns": "^2.29.3",
     "eslint": "8.37.0",
     "eslint-config-next": "13.2.4",

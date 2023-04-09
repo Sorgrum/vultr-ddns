@@ -1,7 +1,6 @@
 import storage from "node-persist";
 import { Request, Response } from "express";
 import { Router } from "express";
-import { StatusSnapshot } from "features/ddns/types";
 
 const router = Router();
 

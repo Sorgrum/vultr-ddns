@@ -1,10 +1,17 @@
 FROM node:18-alpine as builder
 
+# Install next-js dependencies
 WORKDIR /app/web
-
 COPY package.json package-lock.json .
 RUN npm ci
 
+# Install server dependencies
+WORKDIR /app/web/syncServer
+COPY package.json package-lock.json .
+RUN npm ci
+
+# Build both next-js and server together
+WORKDIR /app/web
 COPY . .
 RUN npm run build
 
@@ -12,17 +19,17 @@ FROM node:18-alpine
 
 WORKDIR /app 
 
-RUN apk update
-RUN apk add git
-RUN git clone https://github.com/andyjsmith/Vultr-Dynamic-DNS.git vultr-ddns
-
 COPY --from=builder /app/web/package.json package.json
 COPY --from=builder /app/web/node_modules node_modules
 COPY --from=builder /app/web/.next .next
 COPY --from=builder /app/web/public public
 
-EXPOSE 3000
+COPY --from=builder /app/web/syncServer/package.json syncServer/package.json
+COPY --from=builder /app/web/syncServer/node_modules syncServer/node_modules
+COPY --from=builder /app/web/syncServer/dist syncServer/dist
 
-# CMD npx --yes serve web
+EXPOSE 3000
+EXPOSE 5000
+
 CMD npm run start
 # ENTRYPOINT ["sh"]

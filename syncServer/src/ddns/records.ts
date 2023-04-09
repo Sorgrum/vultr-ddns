@@ -3,7 +3,7 @@ import {
   LocalRecord,
   Record,
   recordsResponseSchema,
-} from "features/ddns/types";
+} from "../../../features/ddns/types";
 
 import { LocalConfig } from "../../../features/config/types";
 import { CreateRecord } from "./api";

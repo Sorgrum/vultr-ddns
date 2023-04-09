@@ -5,9 +5,9 @@ import {
   Record,
   recordSchema,
   StatusSnapshot,
-} from "features/ddns/types";
-import { isConfigResponse, LocalConfig } from "features/config/types";
-import { isError } from "types";
+} from "../../../features/ddns/types";
+import { isConfigResponse, LocalConfig } from "../../../features/config/types";
+import { isError } from "../../../types";
 import { Request, Response, Router } from "express";
 import { getRecordsToChange } from "./records";
 import { getStatusSnapshot, saveStatusSnapshot } from "../status/status";

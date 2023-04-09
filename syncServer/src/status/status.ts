@@ -1,4 +1,7 @@
-import { StatusSnapshot, statusSnapshotSchema } from "features/ddns/types";
+import {
+  StatusSnapshot,
+  statusSnapshotSchema,
+} from "../../../features/ddns/types";
 import storage from "node-persist";
 
 const EMPTY_STATUS_SNAPSHOT: StatusSnapshot = {

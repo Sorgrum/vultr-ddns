@@ -5,7 +5,7 @@ import cors from "cors";
 import cron from "node-cron";
 import storage from "node-persist";
 import ddnsRoutes from "./ddns/api";
-import { isLocalConfig, LocalConfig } from "features/config/types";
+import { isLocalConfig, LocalConfig } from "../../features/config/types";
 import { statusRouter } from "./status/api";
 
 const app = express();

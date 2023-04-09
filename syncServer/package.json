@@ -1,11 +1,11 @@
 {
-  "name": "syncServer",
+  "name": "sync-server",
   "version": "0.0.0",
   "scripts": {
-    "build": "npx ts-node build.ts",
+    "build": "npx tsc",
     "lint": "npx eslint --ext .ts src/",
     "lint:tests": "npx eslint --ext .ts spec/",
-    "start": "node -r module-alias/register ./dist --env=production",
+    "start": "node ./dist/syncServer/src --env=production",
     "dev": "nodemon",
     "test": "nodemon --config ./spec/nodemon.json",
     "test:no-reloading": "npx ts-node --files -r tsconfig-paths/register ./spec"
@@ -18,10 +18,7 @@
     "ignore": [
       "src/public"
     ],
-    "exec": "./node_modules/.bin/ts-node --files -r tsconfig-paths/register ./src"
-  },
-  "_moduleAliases": {
-    "@src": "dist"
+    "exec": "./node_modules/.bin/ts-node --files ./src"
   },
   "engines": {
     "node": ">=18.15.0"
@@ -66,7 +63,6 @@
     "nodemon": "^2.0.22",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.3"
   }
 }
