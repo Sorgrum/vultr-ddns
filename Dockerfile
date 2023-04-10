@@ -7,7 +7,7 @@ RUN npm ci
 
 # Install server dependencies
 WORKDIR /app/web/syncServer
-COPY package.json package-lock.json .
+COPY syncServer/package.json syncServer/package-lock.json .
 RUN npm ci
 
 # Build both next-js and server together
