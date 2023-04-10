@@ -10,11 +10,7 @@ import { statusRouter } from "./status/api";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  })
-);
+app.use(cors());
 
 // Basic middleware
 app.use(express.json());
