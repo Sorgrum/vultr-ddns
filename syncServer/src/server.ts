@@ -10,6 +10,7 @@ import { statusRouter } from "./status/api";
 
 const app = express();
 
+app.options("*", cors());
 app.use(cors());
 
 // Basic middleware
