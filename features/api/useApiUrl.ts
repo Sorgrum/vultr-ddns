@@ -4,8 +4,7 @@ export const useApiUrl = () => {
   const [apiUrl, setApiUrl] = React.useState("");
   React.useEffect(() => {
     const HOSTNAME = window.location.hostname ?? "localhost";
-    const PORT = process.env.API_PORT ?? 5000;
-    const API_URL = `http://${HOSTNAME}:${PORT}`;
+    const API_URL = `http://${HOSTNAME}:5000`;
     setApiUrl(API_URL);
   }, []);
   return apiUrl;
