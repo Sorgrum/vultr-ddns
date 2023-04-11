@@ -3,6 +3,18 @@ import Head from "next/head";
 import styles from "@/styles/Home.module.css";
 import { ConfigForm } from "@/features/config/ConfigForm";
 import { Status } from "@/features/ddns/Status";
+import dynamic from "next/dynamic";
+
+const DynamicConfigForm = dynamic(
+  () => import("../features/config/ConfigForm"),
+  {
+    ssr: false,
+  }
+);
+
+const DynamicStatus = dynamic(() => import("../features/ddns/Status"), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
@@ -15,8 +27,8 @@ export default function Home() {
       </Head>
       <main className={styles.main}>
         <div className={styles.grid}>
-          <ConfigForm />
-          <Status />
+          <DynamicConfigForm />
+          <DynamicStatus />
         </div>
       </main>
     </>

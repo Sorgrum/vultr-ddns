@@ -6,18 +6,13 @@ import { Button, Grid, Text } from "@chakra-ui/react";
 import { isError } from "@/types";
 import { useRecordsActions } from "./useStatus";
 import { RecordStatus, isDDNSResponse, isStatusSnapshot } from "./types";
-import { useApiUrl } from "../api/useApiUrl";
+import { API_URL } from "@/constants";
 
 const DynamicRecordTable = dynamic(() => import("./RecordTable"), {
   ssr: false,
 });
 
-type Status = {
-  records: RecordStatus[];
-};
-
 export const Status = () => {
-  const API_URL = useApiUrl();
   const [syncing, setSyncing] = React.useState(false);
   const { saveStatusSnapshot } = useRecordsActions();
 
@@ -70,3 +65,5 @@ export const Status = () => {
     </>
   );
 };
+
+export default Status;
