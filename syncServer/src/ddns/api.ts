@@ -14,6 +14,7 @@ import { getStatusSnapshot, saveStatusSnapshot } from "../status/status";
 import { z } from "zod";
 import type { SetRequired } from "type-fest";
 import storage from "node-persist";
+import { getConfig } from "../server";
 
 const getPublicIPv4 = async (): Promise<string | null> => {
   try {
@@ -161,25 +162,20 @@ export const synchronizeDDNS = async (
   return allRecords;
 };
 
-const fetchConfig = async (): Promise<LocalConfig> => {
-  const res = await fetch("http://localhost:5000/config");
-  const resJson = await res.json();
-  if (!isConfigResponse(resJson))
-    throw new Error("Unable to retrieve configuration");
-  if (resJson.data === null)
-    throw new Error("Unable to retrieve configuration");
-  return resJson.data;
-};
-
 const router = Router();
+
+export const initiateSync = async () => {
+  const config = await getConfig();
+  const records: RecordStatus[] = await synchronizeDDNS(config);
+  const snapshot: StatusSnapshot = { records, lastUpdated: Date.now() };
+  await saveStatusSnapshot(snapshot);
+  return snapshot;
+};
 
 router.post("/", async (req: Request, res: Response<DDNSResponse>) => {
   console.debug("/api/ddns");
   try {
-    const config = await fetchConfig();
-    const records: RecordStatus[] = await synchronizeDDNS(config);
-    const snapshot: StatusSnapshot = { records, lastUpdated: Date.now() };
-    await saveStatusSnapshot(snapshot);
+    const snapshot = await initiateSync();
     return res.status(200).json({ data: snapshot, error: null });
   } catch (err) {
     console.error(err);

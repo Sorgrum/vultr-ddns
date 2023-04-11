@@ -6,6 +6,7 @@ import { Button, Grid, Text } from "@chakra-ui/react";
 import { isError } from "@/types";
 import { useRecordsActions } from "./useStatus";
 import { RecordStatus, isDDNSResponse, isStatusSnapshot } from "./types";
+import { API_URL } from "@/constants";
 
 const DynamicRecordTable = dynamic(() => import("./RecordTable"), {
   ssr: false,
@@ -21,7 +22,7 @@ export const Status = () => {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch("http://localhost:5000/status");
+      const res = await fetch(`${API_URL}/status`);
       const resJson = await res.json();
 
       if (isStatusSnapshot(resJson)) {
@@ -42,7 +43,7 @@ export const Status = () => {
 
   const handleSync = () => {
     setSyncing(true);
-    fetch("http://localhost:5000/ddns", { method: "POST" })
+    fetch(`${API_URL}/ddns`, { method: "POST" })
       .then((res) => res.json())
       .then((res) => {
         if (isError(res)) {

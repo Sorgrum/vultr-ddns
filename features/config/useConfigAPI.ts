@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { isConfigResponse, LocalConfig } from "./types";
 import { isError } from "@/types";
 import { useConfigActions } from "./useConfig";
+import { API_URL } from "@/constants";
 
 type Props = {
   onConfigUpdate?: (config: LocalConfig) => void;
@@ -12,7 +13,7 @@ export const useConfigAPI = (props?: Props) => {
   const { setConfig } = useConfigActions();
 
   const fetchConfig = () =>
-    fetch("http://localhost:5000/config")
+    fetch(`${API_URL}/config`)
       .then((res) => res.json())
       .then((res) => {
         if (isConfigResponse(res)) {
@@ -33,7 +34,7 @@ export const useConfigAPI = (props?: Props) => {
   };
 
   const save = async (config: LocalConfig) => {
-    return fetch("http://localhost:5000/config", {
+    return fetch(`${API_URL}/config`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ config }),
