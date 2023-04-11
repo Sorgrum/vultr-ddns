@@ -3,15 +3,15 @@ import { toast } from "react-toastify";
 import { isConfigResponse, LocalConfig } from "./types";
 import { isError } from "@/types";
 import { useConfigActions } from "./useConfig";
-import { API_URL } from "@/constants";
+import { useApiUrl } from "../api/useApiUrl";
 
 type Props = {
   onConfigUpdate?: (config: LocalConfig) => void;
 };
 export const useConfigAPI = (props?: Props) => {
+  const API_URL = useApiUrl();
   const [loading, setLoading] = React.useState(false);
   const { setConfig } = useConfigActions();
-
   const fetchConfig = () =>
     fetch(`${API_URL}/config`)
       .then((res) => res.json())

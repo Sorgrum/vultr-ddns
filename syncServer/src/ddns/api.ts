@@ -6,14 +6,13 @@ import {
   recordSchema,
   StatusSnapshot,
 } from "../../../features/ddns/types";
-import { isConfigResponse, LocalConfig } from "../../../features/config/types";
+import { LocalConfig } from "../../../features/config/types";
 import { isError } from "../../../types";
 import { Request, Response, Router } from "express";
 import { getRecordsToChange } from "./records";
 import { getStatusSnapshot, saveStatusSnapshot } from "../status/status";
 import { z } from "zod";
 import type { SetRequired } from "type-fest";
-import storage from "node-persist";
 import { getConfig } from "../server";
 
 const getPublicIPv4 = async (): Promise<string | null> => {
