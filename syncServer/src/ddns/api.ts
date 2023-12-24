@@ -17,7 +17,7 @@ import { getConfig } from "../server";
 
 const getPublicIPv4 = async (): Promise<string | null> => {
   try {
-    const res = await fetch("https://ip4.seeip.org");
+    const res = await fetch("https://api.ipify.org?format=text");
     const addr = await res.text();
     return addr;
   } catch (err) {
@@ -27,7 +27,7 @@ const getPublicIPv4 = async (): Promise<string | null> => {
 
 const getPublicIPv6 = async (): Promise<string | null> => {
   try {
-    const res = await fetch("https://ip6.seeip.org", {
+    const res = await fetch("https://api64.ipify.org?format=text", {
       signal: AbortSignal.timeout(10000),
     });
     const addr = await res.text();
