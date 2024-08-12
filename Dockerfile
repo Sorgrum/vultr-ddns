@@ -29,7 +29,7 @@ COPY --from=builder /app/web/syncServer/node_modules syncServer/node_modules
 COPY --from=builder /app/web/syncServer/dist syncServer/dist
 
 EXPOSE 3000
-EXPOSE 5000
+EXPOSE 3001
 
 CMD npm run start
 # ENTRYPOINT ["sh"]
